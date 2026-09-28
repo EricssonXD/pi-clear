@@ -1,7 +1,12 @@
 import { unlink } from "node:fs/promises";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
+const CLEAR_WIDGET = "pi-clear-confirmation";
+const CLEAR_MESSAGE = "Session deleted. New session started.";
+
 export default function (pi: ExtensionAPI) {
+  pi.on("input", (_event, ctx) => ctx.ui.setWidget(CLEAR_WIDGET, undefined));
+
   pi.registerCommand("clear", {
     description: "Delete this session and start a fresh one",
     handler: async (_args, ctx) => {
@@ -27,7 +32,10 @@ export default function (pi: ExtensionAPI) {
             }
           }
 
-          freshCtx.ui.notify(freshCtx.ui.theme.fg("success", "Session deleted. New session started."), "info");
+          freshCtx.ui.setWidget(CLEAR_WIDGET, (_tui, theme) => ({
+            render: () => [theme.fg("success", CLEAR_MESSAGE)],
+            invalidate() {},
+          }), { placement: "aboveEditor" });
         },
       });
     },
