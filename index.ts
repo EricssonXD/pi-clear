@@ -19,9 +19,11 @@ export default function (pi: ExtensionAPI) {
             try {
               await unlink(previousSessionFile);
             } catch (error) {
-              const message = error instanceof Error ? error.message : String(error);
-              freshCtx.ui.notify(`New session started, but the previous session could not be deleted: ${message}`, "error");
-              return;
+              if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+                const message = error instanceof Error ? error.message : String(error);
+                freshCtx.ui.notify(`New session started, but the previous session could not be deleted: ${message}`, "error");
+                return;
+              }
             }
           }
 

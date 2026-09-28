@@ -43,6 +43,19 @@ test("/clear deletes the old session only after a successful switch", async () =
     } as any);
     await assert.rejects(readFile(oldFile), { code: "ENOENT" });
     assert.equal(await readFile(newFile, "utf8"), "new session");
+
+    const notifications: string[] = [];
+    await handler("", {
+      sessionManager: { getSessionFile: () => oldFile },
+      newSession: async ({ withSession }: any) => {
+        await withSession({
+          sessionManager: { getSessionFile: () => newFile },
+          ui: { notify: (_message: string, type: string) => notifications.push(type) },
+        });
+        return { cancelled: false };
+      },
+    } as any);
+    assert.deepEqual(notifications, ["info"]);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
