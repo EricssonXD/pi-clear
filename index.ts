@@ -1,22 +1,26 @@
 import { unlink } from "node:fs/promises";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-const CLEAR_WIDGET = "pi-clear-confirmation";
+const CLEAR_ENTRY = "pi-clear-confirmation";
 const CLEAR_MESSAGE = "Session deleted. New session started.";
 
 export default function (pi: ExtensionAPI) {
-  pi.on("input", (_event, ctx) => ctx.ui.setWidget(CLEAR_WIDGET, undefined));
+  pi.registerEntryRenderer(CLEAR_ENTRY, (_entry, _options, theme) => ({
+    render: () => ["", ` ${theme.fg("accent", `✓ ${CLEAR_MESSAGE}`)}`, ""],
+    invalidate() {},
+  }));
 
   pi.registerCommand("clear", {
     description: "Delete this session and start a fresh one",
     handler: async (_args, ctx) => {
       const previousSessionFile = ctx.sessionManager.getSessionFile();
+      let deletionError: Error | undefined;
 
       await ctx.newSession({
-        withSession: async (freshCtx) => {
-          const freshSessionFile = freshCtx.sessionManager.getSessionFile();
+        setup: async (sessionManager) => {
+          const freshSessionFile = sessionManager.getSessionFile();
           if (previousSessionFile && previousSessionFile === freshSessionFile) {
-            freshCtx.ui.notify("Refusing to delete the active session file.", "error");
+            deletionError = new Error("Refusing to delete the active session file.");
             return;
           }
 
@@ -25,17 +29,21 @@ export default function (pi: ExtensionAPI) {
               await unlink(previousSessionFile);
             } catch (error) {
               if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-                const message = error instanceof Error ? error.message : String(error);
-                freshCtx.ui.notify(`New session started, but the previous session could not be deleted: ${message}`, "error");
+                deletionError = error instanceof Error ? error : new Error(String(error));
                 return;
               }
             }
           }
 
-          freshCtx.ui.setWidget(CLEAR_WIDGET, (_tui, theme) => ({
-            render: () => [theme.fg("success", CLEAR_MESSAGE)],
-            invalidate() {},
-          }), { placement: "aboveEditor" });
+          sessionManager.appendCustomEntry(CLEAR_ENTRY);
+        },
+        withSession: async (freshCtx) => {
+          if (deletionError) {
+            freshCtx.ui.notify(
+              `New session started, but the previous session could not be deleted: ${deletionError.message}`,
+              "error",
+            );
+          }
         },
       });
     },
