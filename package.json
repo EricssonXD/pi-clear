@@ -1,0 +1,16 @@
+{
+  "name": "pi-clear",
+  "version": "1.0.0",
+  "description": "Delete the current Pi session and start fresh with /clear.",
+  "type": "module",
+  "keywords": ["pi-package"],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test test.ts"
+  },
+  "pi": {
+    "extensions": ["./index.ts"]
+  }
+}
