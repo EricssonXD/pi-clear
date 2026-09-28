@@ -36,7 +36,7 @@ test("/clear deletes the old session only after a successful switch", async () =
       newSession: async ({ withSession }: any) => {
         await withSession({
           sessionManager: { getSessionFile: () => newFile },
-          ui: { notify() {} },
+          ui: { theme: { fg: (_color: string, message: string) => message }, notify() {} },
         });
         return { cancelled: false };
       },
@@ -50,12 +50,15 @@ test("/clear deletes the old session only after a successful switch", async () =
       newSession: async ({ withSession }: any) => {
         await withSession({
           sessionManager: { getSessionFile: () => newFile },
-          ui: { notify: (_message: string, type: string) => notifications.push(type) },
+          ui: {
+            theme: { fg: (color: string, message: string) => `${color}:${message}` },
+            notify: (message: string, type: string) => notifications.push(`${type}:${message}`),
+          },
         });
         return { cancelled: false };
       },
     } as any);
-    assert.deepEqual(notifications, ["info"]);
+    assert.deepEqual(notifications, ["info:success:Session deleted. New session started."]);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

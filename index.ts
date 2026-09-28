@@ -27,7 +27,7 @@ export default function (pi: ExtensionAPI) {
             }
           }
 
-          freshCtx.ui.notify("Started a fresh session.", "info");
+          freshCtx.ui.notify(freshCtx.ui.theme.fg("success", "Session deleted. New session started."), "info");
         },
       });
     },
